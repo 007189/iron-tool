@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同盟精铁查询工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --fg: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #0ea5e9;
+    --primary-fg: #ffffff;
+    --accent: #f1f5f9;
+    --accent-fg: #0f172a;
+    --success: #10b981;
+    --destructive: #ef4444;
+    --warning: #f59e0b;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  @media (min-width: 768px) {
+    .container { padding: 32px 24px; }
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .header .count {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .header .day-display {
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .card-body { padding: 12px 16px; }
+
+  /* Live query */
+  .live-query {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .live-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .live-left .icon {
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .live-label {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .live-time {
+    font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .live-time .sec {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+  .live-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .base-day-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .base-day-select label {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .base-day-select select {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--fg);
+    width: 60px;
+  }
+
+  /* Switch */
+  .switch-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .switch-wrap span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .switch.on { background: var(--primary); }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform .15s;
+  }
+  .switch.on::after { transform: translateX(16px); }
+
+  /* Time selector */
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .time-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .time-group label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .time-group select, .time-group input {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--card);
+    color: var(--fg);
+    text-align: center;
+  }
+  .time-group select { width: 56px; }
+  .time-group input[type=number] { width: 56px; }
+
+  .quick-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .btn-quick {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-quick:hover {
+    background: var(--accent);
+    color: var(--fg);
+  }
+  .btn-quick.active {
+    background: var(--primary);
+    color: var(--primary-fg);
+    border-color: var(--primary);
+  }
+
+  /* Section title */
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 10px;
+  }
+  .section-title h2 {
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title h2 .hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .section-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn.primary {
+    background: var(--primary);
+    color: var(--primary-fg);
+    border-color: var(--primary);
+  }
+  .btn.primary:hover { opacity: .9; }
+  .btn.ghost {
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+  }
+  .btn.ghost:hover { background: var(--accent); color: var(--fg); }
+  .btn.danger {
+    color: var(--destructive);
+    border-color: var(--border);
+  }
+  .btn.danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* Alliance cards */
+  .alliance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .alliance-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow .15s;
+  }
+  .alliance-card:hover { box-shadow: var(--shadow-md); }
+  .ac-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+  }
+  .ac-header {
+    position: relative;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 18px;
+  }
+  .ac-rank {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .ac-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .ac-name {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ac-level-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .ac-next {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ac-next .jump-btn {
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .ac-next .jump-btn:hover { text-decoration: underline; }
+  .ac-iron {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 80px;
+  }
+  .ac-iron .num {
+    font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .ac-iron .label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .ac-iron-detail {
+    display: none;
+    font-size: 10px;
+    color: var(--muted);
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 2px;
+  }
+  .alliance-card.expanded .ac-iron-detail { display: flex; }
+  .ac-chevron {
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: transform .2s;
+  }
+  .alliance-card.expanded .ac-chevron { transform: rotate(180deg); }
+
+  .ac-detail {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .2s ease;
+    border-top: 0 solid var(--border);
+  }
+  .alliance-card.expanded .ac-detail {
+    max-height: 1200px;
+    border-top-width: 1px;
+  }
+  .ac-detail-inner {
+    padding: 12px 14px;
+  }
+  .detail-section {
+    margin-bottom: 12px;
+  }
+  .detail-section:last-child { margin-bottom: 0; }
+  .detail-section h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .detail-table th, .detail-table td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--accent);
+  }
+  .detail-table th {
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--accent);
+  }
+  .detail-table td.num, .detail-table th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-summary {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 6px 0;
+    font-size: 11px;
+    font-weight: 600;
+    border-top: 1px dashed var(--border);
+    margin-top: 2px;
+  }
+  .detail-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--accent);
+  }
+
+  .before-start-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* Total summary */
+  .total-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .total-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .total-num {
+    font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .total-sub {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Compare */
+  .compare-section { margin-top: 16px; }
+  .compare-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .compare-controls select {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+  }
+  .compare-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .compare-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    background: var(--accent);
+  }
+  .compare-row .name { flex: 1; min-width: 0; }
+  .compare-row .diff {
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .compare-row .diff.positive { color: var(--success); }
+  .compare-row .diff.negative { color: var(--destructive); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 600; }
+  .modal-body {
+    overflow-y: auto;
+    padding: 14px 16px;
+    flex: 1;
+  }
+  .modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .modal-footer-right { display: flex; gap: 8px; }
+
+  /* Bulk editor table */
+  .bulk-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bulk-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    margin-bottom: -1px;
+  }
+  .bulk-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+  }
+
+  .bulk-scroll {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+  .bulk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    min-width: 600px;
+  }
+  .bulk-table th, .bulk-table td {
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .bulk-table th {
+    background: var(--accent);
+    font-weight: 500;
+    color: var(--muted);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .bulk-table th.name-col, .bulk-table td.name-col {
+    position: sticky;
+    left: 0;
+    background: var(--card);
+    z-index: 2;
+    text-align: left;
+    min-width: 80px;
+  }
+  .bulk-table th.name-col { background: var(--accent); z-index: 3; }
+  .bulk-table td input {
+    width: 100%;
+    min-width: 48px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+    text-align: center;
+    background: transparent;
+    color: var(--fg);
+    font-family: inherit;
+  }
+  .bulk-table td input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+  }
+  .bulk-table td select {
+    width: 100%;
+    min-width: 42px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 2px;
+    font-size: 11px;
+    text-align: center;
+    background: transparent;
+    color: var(--fg);
+  }
+  .bulk-table td select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+  }
+  .alliance-row-tag {
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .delete-alliance-btn {
+    color: var(--destructive);
+    font-size: 10px;
+    cursor: pointer;
+    float: right;
+  }
+
+  /* Consume editor */
+  .consume-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  .consume-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .consume-item label {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .consume-item input {
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .consume-total {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .consume-total .label { font-size: 13px; color: var(--muted); }
+  .consume-total .val {
+    font-family: ui-monospace, monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--destructive);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Empty */
+  .empty {
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .toast {
+    padding: 8px 14px;
+    background: var(--fg);
+    color: var(--card);
+    border-radius: 6px;
+    font-size: 12px;
+    box-shadow: var(--shadow-md);
+    animation: toastIn .2s ease;
+  }
+  .toast.success { background: #059669; color: white; }
+  .toast.error { background: #dc2626; color: white; }
+  .toast.info { background: var(--fg); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Utility */
+  .mono { font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .text-right { text-align: right; }
+  .muted { color: var(--muted); }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .justify-between { justify-content: space-between; }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-2 { margin-bottom: 8px; }
+
+  .add-alliance-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .add-alliance-row input[type=text] {
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 100px;
+  }
+  .add-alliance-row input[type=color] {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>同盟精铁查询</h1>
+      <p>选择时间节点，查看各同盟精铁数量及计算明细</p>
+    </div>
+    <div class="day-display">
+      <div id="headerDayTime">第 4 天 --:--</div>
+      <div id="headerCount">6 个同盟</div>
+    </div>
+  </div>
+
+  <!-- Live query -->
+  <div class="card">
+    <div class="card-body">
+      <div class="live-query">
+        <div class="live-left">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div>
+            <div class="live-label" id="liveLabel">实时跟随 · 第 4 天</div>
+            <div class="live-time">
+              <span id="liveTimeHH">00</span>:<span id="liveTimeMM">00</span>
+              <span class="sec" id="liveTimeSS">:00</span>
+            </div>
+          </div>
+        </div>
+        <div class="live-right">
+          <div class="base-day-select">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            <label for="baseDaySelect">今天第</label>
+            <select id="baseDaySelect"></select>
+            <label>天</label>
+          </div>
+          <button class="btn ghost btn-sm" id="restoreRealtimeBtn" style="display:none">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            恢复实时
+          </button>
+          <div class="switch-wrap">
+            <span>实时模式</span>
+            <div class="switch on" id="realtimeSwitch"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time selector -->
+  <div class="card">
+    <div class="card-body">
+      <div class="time-row" style="margin-bottom:10px">
+        <div class="time-group">
+          <label>天数</label>
+          <select id="daySelect"></select>
+        </div>
+        <div class="time-group">
+          <label>时</label>
+          <input type="number" id="hourInput" min="0" max="23" value="10">
+        </div>
+        <div class="time-group">
+          <label>分</label>
+          <input type="number" id="minuteInput" min="0" max="59" value="0">
+        </div>
+      </div>
+      <div class="quick-btns" id="quickBtns">
+        <button class="btn-quick" data-day="4" data-hour="8" data-minute="0">今早 08:00</button>
+        <button class="btn-quick" data-day="4" data-hour="10" data-minute="0">今早 10:00</button>
+        <button class="btn-quick" data-day="4" data-hour="22" data-minute="0">今晚 22:00</button>
+        <button class="btn-quick" data-day="5" data-hour="7" data-minute="0">明早 07:00</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alliance list -->
+  <div class="section-title">
+    <h2>同盟精铁 <span class="hint">按目前精铁降序</span></h2>
+    <div class="section-actions">
+      <button class="btn btn-sm danger" id="resetBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        恢复默认
+      </button>
+      <button class="btn btn-sm primary" id="bulkEditBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>
+        批量编辑
+      </button>
+    </div>
+  </div>
+
+  <div class="alliance-list" id="allianceList"></div>
+
+  <!-- Total -->
+  <div class="total-card" id="totalCard">
+    <div class="total-row">
+      <span class="total-label">合计目前精铁</span>
+      <span class="total-num" id="totalCurrent">0</span>
+    </div>
+    <div class="total-sub">
+      <span>精铁总数: <span class="mono" id="totalGross">0</span></span>
+      <span>消耗: <span class="mono" id="totalConsume">0</span></span>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div class="compare-section" id="compareSection">
+    <div class="section-title">
+      <h2>同盟对比</h2>
+    </div>
+    <div class="compare-controls">
+      <span class="muted" style="font-size:12px">基准同盟:</span>
+      <select id="compareBaseSelect"></select>
+      <span class="muted" style="font-size:12px">对比:</span>
+      <select id="compareTargetSelect">
+        <option value="">全部对比</option>
+      </select>
+    </div>
+    <div class="compare-list" id="compareList"></div>
+  </div>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>批量编辑升级时间</h3>
+      <button class="btn btn-icon ghost" id="bulkCloseBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="bulk-tabs">
+        <div class="bulk-tab active" data-tab="upgrade">等级升级</div>
+        <div class="bulk-tab" data-tab="extra">额外产出</div>
+      </div>
+
+      <!-- Upgrade Tab -->
+      <div id="tab-upgrade">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          填写每个等级的升级完成时间（天 + 时:分）。等级 2~20，空着表示还没升级。
+        </p>
+        <div class="bulk-scroll">
+          <table class="bulk-table" id="bulkTable"></table>
+        </div>
+        <div class="add-alliance-row">
+          <input type="text" id="newAllianceName" placeholder="新同盟名称">
+          <input type="color" id="newAllianceColor" value="#64748b" title="选择颜色">
+          <button class="btn btn-sm" id="addAllianceBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            添加同盟
+          </button>
+        </div>
+      </div>
+
+      <!-- Extra Tab -->
+      <div id="tab-extra" style="display:none">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          每个额外产出设施完成后，以 10 精铁/小时 持续产出。填完成时间（天 + 时:分）。
+        </p>
+        <div class="bulk-scroll">
+          <table class="bulk-table" id="extraTable"></table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn danger" id="bulkResetBtn">恢复默认</button>
+      <div class="modal-footer-right">
+        <button class="btn" id="bulkCancelBtn">取消</button>
+        <button class="btn primary" id="bulkSaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Consume Edit Modal -->
+<div class="modal-overlay" id="consumeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="consumeModalTitle">消耗精铁设置</h3>
+      <button class="btn btn-icon ghost" id="consumeCloseBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="consume-grid" id="consumeGrid"></div>
+      <div class="consume-total">
+        <span class="label">总消耗精铁</span>
+        <span class="val" id="consumeTotalVal">0</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-right">
+        <button class="btn" id="consumeCancelBtn">取消</button>
+        <button class="btn primary" id="consumeSaveBtn">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== 数据常量 ====================
+const START_MINUTES = 12 * 60 + 13; // 12:13
+const INITIAL_IRON = 25;
+const INITIAL_LEVEL = 1;
+const PRODUCTION_PER_LEVEL_PER_HOUR = 6;
+const EXTRA_PRODUCTION_IRON = 10;
+const EXTRA_PRODUCTION_COUNT = 4;
+const MAX_LEVEL = 20;
+const LEVELS = Array.from({ length: MAX_LEVEL - 1 }, (_, i) => i + 2);
+
+const CITY_BUILD_COST = {
+  4: 500, 6: 750, 8: 1000, 9: 1000, 10: 1500, 11: 1500,
+  13: 2000, 14: 2500, 15: 2500, 16: 3000, 18: 4500, 20: 6000
+};
+const CITY_LEVELS = [4, 6, 8, 9, 10, 11, 13, 14, 15, 16, 18, 20];
+const BASE_CAMP_COST = 200;
+const DATA_VERSION = 5;
+
+// 默认数据
+const DEFAULT_ALLIANCES = [
+  {
+    id: '1', name: '赤羽', color: '#EF4444',
+    upgrades: [
+      { level: 4, day: 1, hour: 12, minute: 13 },
+      { level: 5, day: 1, hour: 12, minute: 36 },
+      { level: 6, day: 1, hour: 14, minute: 15 },
+      { level: 7, day: 1, hour: 14, minute: 29 },
+      { level: 8, day: 1, hour: 15, minute: 13 },
+      { level: 9, day: 1, hour: 19, minute: 26 },
+      { level: 10, day: 2, hour: 7, minute: 35 },
+      { level: 11, day: 2, hour: 9, minute: 6 },
+      { level: 12, day: 2, hour: 12, minute: 16 },
+      { level: 13, day: 2, hour: 19, minute: 7 },
+      { level: 14, day: 3, hour: 9, minute: 23 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  },
+  {
+    id: '2', name: '坏孩子', color: '#8B5CF6',
+    upgrades: [
+      { level: 4, day: 1, hour: 12, minute: 13 },
+      { level: 5, day: 1, hour: 13, minute: 15 },
+      { level: 6, day: 1, hour: 14, minute: 15 },
+      { level: 7, day: 1, hour: 14, minute: 38 },
+      { level: 8, day: 1, hour: 16, minute: 53 },
+      { level: 9, day: 1, hour: 21, minute: 43 },
+      { level: 10, day: 2, hour: 7, minute: 35 },
+      { level: 11, day: 2, hour: 9, minute: 38 },
+      { level: 12, day: 2, hour: 12, minute: 18 },
+      { level: 13, day: 2, hour: 18, minute: 50 },
+      { level: 14, day: 3, hour: 8, minute: 57 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  },
+  {
+    id: '3', name: '逆战', color: '#3B82F6',
+    upgrades: [
+      { level: 2, day: 1, hour: 12, minute: 13 },
+      { level: 3, day: 1, hour: 12, minute: 23 },
+      { level: 4, day: 1, hour: 13, minute: 15 },
+      { level: 5, day: 1, hour: 14, minute: 15 },
+      { level: 6, day: 1, hour: 14, minute: 43 },
+      { level: 7, day: 1, hour: 15, minute: 44 },
+      { level: 8, day: 1, hour: 18, minute: 53 },
+      { level: 9, day: 2, hour: 7, minute: 30 },
+      { level: 10, day: 2, hour: 9, minute: 0 },
+      { level: 11, day: 2, hour: 12, minute: 10 },
+      { level: 12, day: 2, hour: 16, minute: 22 },
+      { level: 13, day: 3, hour: 8, minute: 24 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  },
+  {
+    id: '4', name: '彼岸花', color: '#EC4899',
+    upgrades: [
+      { level: 4, day: 1, hour: 12, minute: 13 },
+      { level: 5, day: 1, hour: 13, minute: 5 },
+      { level: 6, day: 1, hour: 14, minute: 24 },
+      { level: 7, day: 1, hour: 14, minute: 37 },
+      { level: 8, day: 1, hour: 15, minute: 27 },
+      { level: 9, day: 1, hour: 19, minute: 11 },
+      { level: 10, day: 2, hour: 7, minute: 35 },
+      { level: 11, day: 2, hour: 9, minute: 0 },
+      { level: 12, day: 2, hour: 12, minute: 10 },
+      { level: 13, day: 2, hour: 17, minute: 30 },
+      { level: 14, day: 3, hour: 8, minute: 57 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  },
+  {
+    id: '5', name: '花间', color: '#10B981',
+    upgrades: [
+      { level: 2, day: 1, hour: 12, minute: 13 },
+      { level: 3, day: 1, hour: 12, minute: 23 },
+      { level: 4, day: 1, hour: 14, minute: 7 },
+      { level: 5, day: 1, hour: 14, minute: 37 },
+      { level: 6, day: 1, hour: 15, minute: 13 },
+      { level: 7, day: 1, hour: 16, minute: 53 },
+      { level: 8, day: 1, hour: 21, minute: 36 },
+      { level: 9, day: 2, hour: 7, minute: 58 },
+      { level: 10, day: 2, hour: 9, minute: 49 },
+      { level: 11, day: 2, hour: 12, minute: 58 },
+      { level: 12, day: 2, hour: 21, minute: 0 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  },
+  {
+    id: '6', name: '龙狱', color: '#F59E0B',
+    upgrades: [
+      { level: 3, day: 1, hour: 12, minute: 13 },
+      { level: 4, day: 1, hour: 13, minute: 5 },
+      { level: 5, day: 1, hour: 14, minute: 15 },
+      { level: 6, day: 1, hour: 14, minute: 43 },
+      { level: 7, day: 1, hour: 15, minute: 44 },
+      { level: 8, day: 1, hour: 19, minute: 26 },
+      { level: 9, day: 2, hour: 7, minute: 35 },
+      { level: 10, day: 2, hour: 10, minute: 0 },
+      { level: 11, day: 2, hour: 13, minute: 30 },
+      { level: 12, day: 2, hour: 21, minute: 0 },
+    ],
+    extraProductions: [
+      { index: 1 }, { index: 2 }, { index: 3 }, { index: 4 }
+    ]
+  }
+];
+
+// ==================== 工具函数 ====================
+function toMinutes(day, hour, minute) {
+  return (day - 1) * 24 * 60 + hour * 60 + minute;
+}
+
+function fmtTime(totalMinutes) {
+  const dayOffset = Math.floor(totalMinutes / (24 * 60));
+  const h = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const m = totalMinutes % 60;
+  const hh = h.toString().padStart(2, '0');
+  const mm = m.toString().padStart(2, '0');
+  if (dayOffset === 0) return '当天 ' + hh + ':' + mm;
+  return '第' + (dayOffset + 1) + '天 ' + hh + ':' + mm;
+}
+
+function fmtTimeShort(totalMinutes) {
+  const dayOffset = Math.floor(totalMinutes / (24 * 60));
+  const h = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const m = totalMinutes % 60;
+  return 'D' + (dayOffset + 1) + ' ' + h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
+}
+
+function parseHourMinute(raw) {
+  var trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+  var match = trimmed.match(/^(\d{1,2})[:.\-：](\d{1,2})$/);
+  if (!match) {
+    var digitMatch = trimmed.match(/^(\d{2})(\d{2})$/);
+    if (!digitMatch) return null;
+    var h = parseInt(digitMatch[1], 10);
+    var m = parseInt(digitMatch[2], 10);
+    if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return { hour: h, minute: m };
+  }
+  var h2 = parseInt(match[1], 10);
+  var m2 = parseInt(match[2], 10);
+  if (h2 < 0 || h2 > 23 || m2 < 0 || m2 > 59) return null;
+  return { hour: h2, minute: m2 };
+}
+
+function toast(msg, type) {
+  type = type || 'info';
+  var container = document.getElementById('toastContainer');
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function() { el.remove(); }, 2000);
+}
+
+function defaultConsume() {
+  var cities = {};
+  CITY_LEVELS.forEach(function(l) { cities[l] = 0; });
+  return { baseCamps: 0, cities: cities };
+}
+
+// ==================== 存储 ====================
+var STORAGE_KEYS = {
+  query: 'alliance_iron_last_query',
+  alliances: 'alliance_iron_custom_alliances',
+  version: 'alliance_iron_data_version',
+  consumes: 'alliance_iron_consumes',
+  baseDay: 'alliance_iron_realtime_base_day',
+  compareBase: 'alliance_iron_compare_base'
+};
+
+function loadAlliances() {
+  try {
+    var savedVersion = localStorage.getItem(STORAGE_KEYS.version);
+    if (savedVersion && String(savedVersion) === String(DATA_VERSION)) {
+      var raw = localStorage.getItem(STORAGE_KEYS.alliances);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeAlliances(parsed);
+        }
+      }
+    }
+  } catch(e) {}
+  var defaults = JSON.parse(JSON.stringify(DEFAULT_ALLIANCES));
+  var normalized = normalizeAlliances(defaults);
+  saveAlliances(normalized);
+  return normalized;
+}
+
+function saveAlliances(alliances) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.alliances, JSON.stringify(alliances));
+    localStorage.setItem(STORAGE_KEYS.version, String(DATA_VERSION));
+  } catch(e) {}
+}
+
+function normalizeAlliances(alliances) {
+  return alliances.map(function(a) {
+    var eps = (a.extraProductions && a.extraProductions.length > 0)
+      ? a.extraProductions
+      : Array.from({ length: EXTRA_PRODUCTION_COUNT }, function(_, i) { return { index: i + 1 }; });
+    return Object.assign({}, a, { extraProductions: eps });
+  });
+}
+
+function loadConsumes() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.consumes);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {};
+}
+
+function saveConsumes(data) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.consumes, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadSavedQuery() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.query);
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (typeof p.day === 'number' && typeof p.hour === 'number' && typeof p.minute === 'number')
+        return p;
+    }
+  } catch(e) {}
+  return { day: 4, hour: 10, minute: 0 };
+}
+
+function saveQuery(d, h, m) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.query, JSON.stringify({ day: d, hour: h, minute: m }));
+  } catch(e) {}
+}
+
+function loadBaseDay() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.baseDay);
+    if (raw) {
+      var n = parseInt(raw, 10);
+      if (!isNaN(n) && n >= 1 && n <= 30) return n;
+    }
+  } catch(e) {}
+  return 4;
+}
+
+function saveBaseDay(n) {
+  try { localStorage.setItem(STORAGE_KEYS.baseDay, String(n)); } catch(e) {}
+}
+
+// ==================== 计算函数 ====================
+function calcIron(alliance, queryDay, queryHour, queryMinute) {
+  var queryMinutes = toMinutes(queryDay, queryHour, queryMinute);
+
+  if (queryMinutes < START_MINUTES) {
+    var nextUpgrade = null;
+    for (var i = 0; i < alliance.upgrades.length; i++) {
+      var u = alliance.upgrades[i];
+      var um = toMinutes(u.day, u.hour, u.minute);
+      if (um > queryMinutes) {
+        if (!nextUpgrade || um < toMinutes(nextUpgrade.day, nextUpgrade.hour, nextUpgrade.minute)) {
+          nextUpgrade = { level: u.level, day: u.day, hour: u.hour, minute: u.minute };
+        }
+      }
+    }
+    return {
+      total: INITIAL_IRON, level: INITIAL_LEVEL, segments: [], extraSegments: [],
+      beforeStart: true, initialIron: INITIAL_IRON, levelProduction: 0,
+      extraProductionTotal: 0, nextUpgrade: nextUpgrade
+    };
+  }
+
+  var sortedUpgrades = alliance.upgrades.slice().sort(function(a, b) {
+    return toMinutes(a.day, a.hour, a.minute) - toMinutes(b.day, b.hour, b.minute);
+  });
+
+  var total = INITIAL_IRON;
+  var currentLevel = INITIAL_LEVEL;
+  var currentTime = START_MINUTES;
+  var segments = [];
+
+  for (var j = 0; j < sortedUpgrades.length; j++) {
+    var upgrade = sortedUpgrades[j];
+    var upgradeMinutes = toMinutes(upgrade.day, upgrade.hour, upgrade.minute);
+
+    if (upgrade.level <= currentLevel) continue;
+    if (upgradeMinutes <= currentTime) { currentLevel = upgrade.level; continue; }
+
+    if (upgradeMinutes <= queryMinutes) {
+      var dur = (upgradeMinutes - currentTime) / 60;
+      var prod = dur * PRODUCTION_PER_LEVEL_PER_HOUR * currentLevel;
+      total += prod;
+      segments.push({
+        fromMinutes: currentTime, toMinutes: upgradeMinutes,
+        level: currentLevel, durationHours: dur, production: prod
+      });
+      currentLevel = upgrade.level;
+      currentTime = upgradeMinutes;
+    } else {
+      var dur2 = (queryMinutes - currentTime) / 60;
+      var prod2 = dur2 * PRODUCTION_PER_LEVEL_PER_HOUR * currentLevel;
+      total += prod2;
+      segments.push({
+        fromMinutes: currentTime, toMinutes: queryMinutes,
+        level: currentLevel, durationHours: dur2, production: prod2
+      });
+      currentTime = queryMinutes;
+      break;
+    }
+  }
+
+  if (currentTime < queryMinutes) {
+    var dur3 = (queryMinutes - currentTime) / 60;
+    var prod3 = dur3 * PRODUCTION_PER_LEVEL_PER_HOUR * currentLevel;
+    total += prod3;
+    segments.push({
+      fromMinutes: currentTime, toMinutes: queryMinutes,
+      level: currentLevel, durationHours: dur3, production: prod3
+    });
+  }
+
+  var levelProduction = total - INITIAL_IRON;
+
+  // 额外产出
+  var extraSegments = [];
+  var extraProductionTotal = 0;
+  if (alliance.extraProductions && alliance.extraProductions.length > 0) {
+    var sortedExtras = alliance.extraProductions.slice()
+      .filter(function(e) {
+        return typeof e.day === 'number' && typeof e.hour === 'number' && typeof e.minute === 'number';
+      })
+      .sort(function(a, b) {
+        return toMinutes(a.day, a.hour, a.minute) - toMinutes(b.day, b.hour, b.minute);
+      });
+
+    for (var k = 0; k < sortedExtras.length; k++) {
+      var ex = sortedExtras[k];
+      var em = toMinutes(ex.day, ex.hour, ex.minute);
+      if (em >= queryMinutes) continue;
+      var effectiveStart = Math.max(em, START_MINUTES);
+      if (effectiveStart >= queryMinutes) continue;
+      var dur4 = (queryMinutes - effectiveStart) / 60;
+      var prod4 = dur4 * EXTRA_PRODUCTION_IRON;
+      total += prod4;
+      extraProductionTotal += prod4;
+      extraSegments.push({
+        index: ex.index, startMinutes: em, endMinutes: queryMinutes,
+        durationHours: dur4, production: prod4
+      });
+    }
+  }
+
+  // 下一级
+  var nextUp = null;
+  for (var l = 0; l < sortedUpgrades.length; l++) {
+    var um2 = toMinutes(sortedUpgrades[l].day, sortedUpgrades[l].hour, sortedUpgrades[l].minute);
+    if (um2 > queryMinutes) {
+      nextUp = { level: sortedUpgrades[l].level, day: sortedUpgrades[l].day, hour: sortedUpgrades[l].hour, minute: sortedUpgrades[l].minute };
+      break;
+    }
+  }
+
+  return {
+    total: total, level: currentLevel, segments: segments, extraSegments: extraSegments,
+    beforeStart: false, initialIron: INITIAL_IRON, levelProduction: levelProduction,
+    extraProductionTotal: extraProductionTotal, nextUpgrade: nextUp
+  };
+}
+
+function calcConsumeIron(consume) {
+  var total = 0;
+  total += (consume.baseCamps || 0) * BASE_CAMP_COST;
+  var cities = consume.cities || {};
+  for (var key in cities) {
+    if (Object.prototype.hasOwnProperty.call(cities, key)) {
+      var cost = CITY_BUILD_COST[Number(key)] || 0;
+      total += (cities[key] || 0) * cost;
+    }
+  }
+  return total;
+}
+
+// ==================== 应用状态 ====================
+var state = {
+  day: 4, hour: 10, minute: 0,
+  realtimeMode: true,
+  realtimeBaseDay: 4,
+  alliances: [],
+  consumes: {},
+  expanded: {},
+  compareBaseId: null
+};
+
+var realtimeTimer = null;
+
+// ==================== 渲染 ====================
+function getResults() {
+  return state.alliances.map(function(a) {
+    var result = calcIron(a, state.day, state.hour, state.minute);
+    var consumeData = state.consumes[a.id] || defaultConsume();
+    var consumed = calcConsumeIron(consumeData);
+    var current = result.total - consumed;
+    return { alliance: a, result: result, consumed: consumed, current: current, consumeData: consumeData };
+  }).sort(function(a, b) { return b.current - a.current; });
+}
+
+function renderAll() {
+  renderHeader();
+  renderAllianceCards();
+  renderTotal();
+  renderCompare();
+  saveQuery(state.day, state.hour, state.minute);
+}
+
+function renderHeader() {
+  var results = getResults();
+  document.getElementById('headerDayTime').textContent =
+    '第 ' + state.day + ' 天 ' +
+    state.hour.toString().padStart(2, '0') + ':' +
+    state.minute.toString().padStart(2, '0');
+  document.getElementById('headerCount').textContent = results.length + ' 个同盟';
+}
+
+function renderAllianceCards() {
+  var results = getResults();
+  var container = document.getElementById('allianceList');
+  container.innerHTML = '';
+
+  results.forEach(function(item, idx) {
+    var a = item.alliance;
+    var r = item.result;
+    var maxLevel = a.upgrades.length > 0 ? Math.max.apply(null, a.upgrades.map(function(u) { return u.level; })) : 1;
+    var isExpanded = state.expanded[a.id];
+
+    var nextText = r.nextUpgrade
+      ? '下一级 Lv.' + r.nextUpgrade.level + '：第' + r.nextUpgrade.day + '天 ' +
+        r.nextUpgrade.hour.toString().padStart(2, '0') + ':' +
+        r.nextUpgrade.minute.toString().padStart(2, '0')
+      : '已达最高等级';
+
+    var card = document.createElement('div');
+    card.className = 'alliance-card' + (isExpanded ? ' expanded' : '');
+    card.innerHTML = `
+      <div class="ac-header">
+        <div class="ac-bar" style="background:${a.color}"></div>
+        <div class="ac-rank">${idx + 1}</div>
+        <div class="ac-info">
+          <div class="ac-name">
+            ${escapeHtml(a.name)}
+            <span class="ac-level-badge" style="background:${a.color}15;color:${a.color}">
+              Lv.${r.level}
+              <span style="opacity:.6;font-weight:400">/ Lv.${maxLevel}</span>
+            </span>
+            ${r.beforeStart ? '<span class="before-start-tag">未到起点</span>' : ''}
+          </div>
+          <div class="ac-next" title="${escapeHtml(nextText)}">
+            ${escapeHtml(nextText)}
+            ${r.nextUpgrade ? ' · <a class="jump-btn" data-action="jump" data-id="' + a.id + '">跳转</a>' : ''}
+          </div>
+        </div>
+        <div class="ac-iron">
+          <div class="num" style="color:${a.color}">${item.current.toFixed(1)}</div>
+          <div class="label">目前精铁</div>
+          <div class="ac-iron-detail">
+            <span>总数 ${r.total.toFixed(1)}</span>
+            <span>消耗 ${item.consumed.toFixed(0)}</span>
+          </div>
+        </div>
+        <svg class="ac-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="ac-detail">
+        <div class="ac-detail-inner">
+          ${renderDetailContent(a, r, item)}
+          <div class="detail-actions">
+            <button class="btn btn-sm" data-action="consumeEdit" data-id="${a.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              消耗编辑
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 点击头部展开/收起
+    var header = card.querySelector('.ac-header');
+    header.addEventListener('click', function(e) {
+      if (e.target.closest('[data-action]')) return;
+      state.expanded[a.id] = !state.expanded[a.id];
+      renderAllianceCards();
+    });
+
+    // 跳转按钮
+    var jumpBtn = card.querySelector('[data-action="jump"]');
+    if (jumpBtn) {
+      jumpBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (r.nextUpgrade) {
+          setRealtimeMode(false);
+          state.day = r.nextUpgrade.day;
+          state.hour = r.nextUpgrade.hour;
+          state.minute = r.nextUpgrade.minute;
+          syncInputsFromState();
+          renderAll();
+          toast('已跳转到 ' + a.name + ' 升级到 Lv.' + r.nextUpgrade.level + ' 的时间点', 'success');
+        }
+      });
+    }
+
+    // 消耗编辑
+    var consumeBtn = card.querySelector('[data-action="consumeEdit"]');
+    if (consumeBtn) {
+      consumeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openConsumeModal(a.id);
+      });
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function renderDetailContent(alliance, result, item) {
+  var html = '';
+
+  if (result.beforeStart) {
+    html += '<div class="detail-section">';
+    html += '<h4>尚未到达计时起点（12:13）</h4>';
+    html += '<p style="font-size:12px;color:var(--muted)">初始精铁：' + result.initialIron + '</p>';
+    html += '</div>';
+  } else {
+    html += '<div class="detail-section">';
+    html += '<h4>等级产出明细</h4>';
+    html += '<div class="bulk-scroll">';
+    html += '<table class="detail-table"><thead><tr>';
+    html += '<th>时间段</th><th>等级</th><th class="num">时长(h)</th><th class="num">产出</th>';
+    html += '</tr></thead><tbody>';
+    result.segments.forEach(function(seg) {
+      html += '<tr>';
+      html += '<td>' + fmtTimeShort(seg.fromMinutes) + ' → ' + fmtTimeShort(seg.toMinutes) + '</td>';
+      html += '<td>Lv.' + seg.level + '</td>';
+      html += '<td class="num mono">' + seg.durationHours.toFixed(2) + '</td>';
+      html += '<td class="num mono">+' + seg.production.toFixed(1) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div class="detail-summary">';
+    html += '<span>初始精铁 ' + result.initialIron + ' + 等级产出 ' + result.levelProduction.toFixed(1) + '</span>';
+    html += '<span class="mono">小计 ' + (result.initialIron + result.levelProduction).toFixed(1) + '</span>';
+    html += '</div></div>';
+  }
+
+  // 额外产出
+  if (result.extraSegments.length > 0 || (alliance.extraProductions && alliance.extraProductions.length > 0)) {
+    html += '<div class="detail-section">';
+    html += '<h4>额外产出明细（10/小时/每个）</h4>';
+    if (result.extraSegments.length > 0) {
+      html += '<div class="bulk-scroll">';
+      html += '<table class="detail-table"><thead><tr>';
+      html += '<th>设施</th><th>完成时间</th><th class="num">累计时长(h)</th><th class="num">产出</th>';
+      html += '</tr></thead><tbody>';
+      result.extraSegments.forEach(function(es) {
+        html += '<tr>';
+        html += '<td>#' + es.index + '</td>';
+        html += '<td>' + fmtTimeShort(es.startMinutes) + '</td>';
+        html += '<td class="num mono">' + es.durationHours.toFixed(2) + '</td>';
+        html += '<td class="num mono">+' + es.production.toFixed(1) + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      html += '<div class="detail-summary">';
+      html += '<span>额外产出合计</span>';
+      html += '<span class="mono">+' + result.extraProductionTotal.toFixed(1) + '</span>';
+      html += '</div>';
+    } else {
+      html += '<p style="font-size:12px;color:var(--muted)">暂无可计入的额外产出（需设置完成时间且已完成）</p>';
+    }
+    html += '</div>';
+  }
+
+  // 消耗
+  html += '<div class="detail-section">';
+  html += '<h4>精铁消耗</h4>';
+  var cd = item.consumeData;
+  var consumed = item.consumed;
+  var cityParts = [];
+  for (var lvl in cd.cities) {
+    if (cd.cities[lvl] > 0) cityParts.push(lvl + '级城×' + cd.cities[lvl]);
+  }
+  var parts = [];
+  if (cd.baseCamps > 0) parts.push('大营×' + cd.baseCamps);
+  if (cityParts.length > 0) parts.push(cityParts.join('、'));
+  if (parts.length === 0) parts.push('无消耗');
+  html += '<p style="font-size:12px;color:var(--muted)">' + parts.join('，') + '</p>';
+  html += '<div class="detail-summary">';
+  html += '<span>消耗精铁</span>';
+  html += '<span class="mono" style="color:var(--destructive)">-' + consumed.toFixed(0) + '</span>';
+  html += '</div></div>';
+
+  return html;
+}
+
+function renderTotal() {
+  var results = getResults();
+  var totalCurrent = results.reduce(function(s, r) { return s + r.current; }, 0);
+  var totalGross = results.reduce(function(s, r) { return s + r.result.total; }, 0);
+  var totalConsume = results.reduce(function(s, r) { return s + r.consumed; }, 0);
+  document.getElementById('totalCurrent').textContent = totalCurrent.toFixed(1);
+  document.getElementById('totalGross').textContent = totalGross.toFixed(1);
+  document.getElementById('totalConsume').textContent = totalConsume.toFixed(0);
+}
+
+function renderCompare() {
+  var results = getResults();
+  var baseSelect = document.getElementById('compareBaseSelect');
+  var currentBase = state.compareBaseId || (results[0] && results[0].alliance.id);
+  state.compareBaseId = currentBase;
+
+  baseSelect.innerHTML = '';
+  results.forEach(function(r) {
+    var opt = document.createElement('option');
+    opt.value = r.alliance.id;
+    opt.textContent = r.alliance.name;
+    if (r.alliance.id === currentBase) opt.selected = true;
+    baseSelect.appendChild(opt);
+  });
+
+  var baseResult = results.find(function(r) { return r.alliance.id === currentBase; });
+  var list = document.getElementById('compareList');
+  list.innerHTML = '';
+
+  if (!baseResult) return;
+
+  results.forEach(function(r) {
+    if (r.alliance.id === currentBase) return;
+    var diff = r.current - baseResult.current;
+    var row = document.createElement('div');
+    row.className = 'compare-row';
+    var colorDot = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + r.alliance.color + ';margin-right:6px;vertical-align:middle"></span>';
+    row.innerHTML =
+      '<span>' + colorDot + escapeHtml(r.alliance.name) + '（Lv.' + r.result.level + '）</span>' +
+      '<span class="mono" style="color:var(--muted)">' + r.current.toFixed(1) + '</span>' +
+      '<span class="diff ' + (diff >= 0 ? 'positive' : 'negative') + '">' +
+      (diff >= 0 ? '+' : '') + diff.toFixed(1) + '</span>';
+    list.appendChild(row);
+  });
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ==================== 事件处理 ====================
+function setRealtimeMode(on) {
+  state.realtimeMode = on;
+  var sw = document.getElementById('realtimeSwitch');
+  if (on) {
+    sw.classList.add('on');
+    document.getElementById('restoreRealtimeBtn').style.display = 'none';
+    document.getElementById('liveLabel').textContent = '实时跟随 · 第 ' + state.realtimeBaseDay + ' 天';
+    document.getElementById('liveTimeSS').style.display = '';
+    startRealtime();
+  } else {
+    sw.classList.remove('on');
+    document.getElementById('restoreRealtimeBtn').style.display = '';
+    document.getElementById('liveLabel').textContent = '查询时间 · 第 ' + state.day + ' 天';
+    document.getElementById('liveTimeSS').style.display = 'none';
+    stopRealtime();
+  }
+  updateLiveTimeDisplay();
+}
+
+function startRealtime() {
+  stopRealtime();
+  updateRealtimeValues();
+  realtimeTimer = setInterval(updateRealtimeValues, 1000);
+}
+
+function stopRealtime() {
+  if (realtimeTimer) { clearInterval(realtimeTimer); realtimeTimer = null; }
+}
+
+function updateRealtimeValues() {
+  var now = new Date();
+  state.day = state.realtimeBaseDay;
+  state.hour = now.getHours();
+  state.minute = now.getMinutes();
+  syncInputsFromState();
+  renderAll();
+  updateLiveTimeDisplay();
+}
+
+function updateLiveTimeDisplay() {
+  var now = new Date();
+  var hh, mm, ss;
+  if (state.realtimeMode) {
+    hh = now.getHours().toString().padStart(2, '0');
+    mm = now.getMinutes().toString().padStart(2, '0');
+    ss = now.getSeconds().toString().padStart(2, '0');
+  } else {
+    hh = state.hour.toString().padStart(2, '0');
+    mm = state.minute.toString().padStart(2, '0');
+    ss = '00';
+  }
+  document.getElementById('liveTimeHH').textContent = hh;
+  document.getElementById('liveTimeMM').textContent = mm;
+  document.getElementById('liveTimeSS').textContent = ':' + ss;
+
+  if (state.realtimeMode) {
+    document.getElementById('liveLabel').textContent = '实时跟随 · 第 ' + state.realtimeBaseDay + ' 天';
+  } else {
+    document.getElementById('liveLabel').textContent = '查询时间 · 第 ' + state.day + ' 天';
+  }
+}
+
+function syncInputsFromState() {
+  document.getElementById('daySelect').value = String(state.day);
+  document.getElementById('hourInput').value = state.hour;
+  document.getElementById('minuteInput').value = state.minute;
+}
+
+function populateSelects() {
+  var daySel = document.getElementById('daySelect');
+  daySel.innerHTML = '';
+  for (var d = 1; d <= 30; d++) {
+    var opt = document.createElement('option');
+    opt.value = String(d);
+    opt.textContent = '第 ' + d + ' 天';
+    daySel.appendChild(opt);
+  }
+
+  var baseSel = document.getElementById('baseDaySelect');
+  baseSel.innerHTML = '';
+  for (var d2 = 1; d2 <= 30; d2++) {
+    var opt2 = document.createElement('option');
+    opt2.value = String(d2);
+    opt2.textContent = String(d2);
+    baseSel.appendChild(opt2);
+  }
+}
+
+// ==================== 批量编辑器 ====================
+var bulkState = {
+  activeTab: 'upgrade',
+  cellMap: {},      // id -> level -> { day, time }
+  extraMap: {}      // id -> index -> { day, time }
+};
+
+function openBulkModal() {
+  // 构建 cellMap
+  bulkState.cellMap = {};
+  bulkState.extraMap = {};
+  state.alliances.forEach(function(a) {
+    bulkState.cellMap[a.id] = {};
+    a.upgrades.forEach(function(u) {
+      bulkState.cellMap[a.id][u.level] = {
+        day: u.day,
+        time: u.hour.toString().padStart(2, '0') + ':' + u.minute.toString().padStart(2, '0')
+      };
+    });
+    bulkState.extraMap[a.id] = {};
+    if (a.extraProductions) {
+      a.extraProductions.forEach(function(ep) {
+        if (typeof ep.day === 'number' && typeof ep.hour === 'number' && typeof ep.minute === 'number') {
+          bulkState.extraMap[a.id][ep.index] = {
+            day: ep.day,
+            time: ep.hour.toString().padStart(2, '0') + ':' + ep.minute.toString().padStart(2, '0')
+          };
+        }
+      });
+    }
+  });
+  renderBulkTable();
+  renderExtraTable();
+  switchBulkTab('upgrade');
+  document.getElementById('bulkModal').classList.add('show');
+}
+
+function closeBulkModal() {
+  document.getElementById('bulkModal').classList.remove('show');
+}
+
+function switchBulkTab(tab) {
+  bulkState.activeTab = tab;
+  document.querySelectorAll('.bulk-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  document.getElementById('tab-upgrade').style.display = tab === 'upgrade' ? '' : 'none';
+  document.getElementById('tab-extra').style.display = tab === 'extra' ? '' : 'none';
+}
+
+function renderBulkTable() {
+  var table = document.getElementById('bulkTable');
+  // 表头：名称 + Lv.2~20（天+时:分）
+  var thead = '<thead><tr><th class="name-col">同盟</th>';
+  LEVELS.forEach(function(lv) {
+    thead += '<th colspan="2">Lv.' + lv + '</th>';
+  });
+  thead += '</tr><tr><th class="name-col"></th>';
+  LEVELS.forEach(function() {
+    thead += '<th>天</th><th>时:分</th>';
+  });
+  thead += '</tr></thead>';
+
+  var tbody = '<tbody>';
+  state.alliances.forEach(function(a) {
+    tbody += '<tr>';
+    tbody += '<td class="name-col" style="background:var(--card)">';
+    tbody += '<span class="alliance-row-tag" style="background:' + a.color + '"></span>';
+    tbody += '<span>' + escapeHtml(a.name) + '</span>';
+    tbody += '<span class="delete-alliance-btn" data-delete="' + a.id + '" title="删除同盟">×</span>';
+    tbody += '</td>';
+
+    LEVELS.forEach(function(lv) {
+      var cell = bulkState.cellMap[a.id] && bulkState.cellMap[a.id][lv];
+      var dayVal = cell ? cell.day : '';
+      var timeVal = cell ? cell.time : '';
+      tbody += '<td>';
+      tbody += '<select data-aid="' + a.id + '" data-lv="' + lv + '" data-field="day" class="bulk-day">';
+      tbody += '<option value="">-</option>';
+      for (var d = 1; d <= 30; d++) {
+        tbody += '<option value="' + d + '"' + (dayVal === d ? ' selected' : '') + '>' + d + '</option>';
+      }
+      tbody += '</select>';
+      tbody += '</td>';
+      tbody += '<td>';
+      tbody += '<input type="text" data-aid="' + a.id + '" data-lv="' + lv + '" data-field="time"' +
+        ' placeholder="HH:MM" value="' + escapeHtml(timeVal) + '">';
+      tbody += '</td>';
+    });
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+
+  // 绑定事件
+  table.querySelectorAll('input[data-field="time"]').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var aid = this.dataset.aid;
+      var lv = Number(this.dataset.lv);
+      if (!bulkState.cellMap[aid]) bulkState.cellMap[aid] = {};
+      if (!bulkState.cellMap[aid][lv]) bulkState.cellMap[aid][lv] = { day: 1, time: '' };
+      bulkState.cellMap[aid][lv].time = this.value;
+    });
+  });
+
+  table.querySelectorAll('select.bulk-day').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      var aid = this.dataset.aid;
+      var lv = Number(this.dataset.lv);
+      if (!bulkState.cellMap[aid]) bulkState.cellMap[aid] = {};
+      if (!bulkState.cellMap[aid][lv]) bulkState.cellMap[aid][lv] = { day: 1, time: '' };
+      bulkState.cellMap[aid][lv].day = this.value ? Number(this.value) : null;
+    });
+  });
+
+  table.querySelectorAll('[data-delete]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.dataset.delete;
+      if (state.alliances.length <= 1) { toast('至少保留1个同盟', 'error'); return; }
+      if (!confirm('确定删除这个同盟吗？')) return;
+      state.alliances = state.alliances.filter(function(a) { return a.id !== id; });
+      delete bulkState.cellMap[id];
+      delete bulkState.extraMap[id];
+      renderBulkTable();
+      renderExtraTable();
+      toast('已删除', 'info');
+    });
+  });
+}
+
+function renderExtraTable() {
+  var table = document.getElementById('extraTable');
+  var indices = Array.from({ length: EXTRA_PRODUCTION_COUNT }, function(_, i) { return i + 1; });
+
+  var thead = '<thead><tr><th class="name-col">同盟</th>';
+  indices.forEach(function(i) {
+    thead += '<th colspan="2">额外#' + i + '</th>';
+  });
+  thead += '</tr><tr><th class="name-col"></th>';
+  indices.forEach(function() {
+    thead += '<th>天</th><th>时:分</th>';
+  });
+  thead += '</tr></thead>';
+
+  var tbody = '<tbody>';
+  state.alliances.forEach(function(a) {
+    tbody += '<tr>';
+    tbody += '<td class="name-col" style="background:var(--card)">';
+    tbody += '<span class="alliance-row-tag" style="background:' + a.color + '"></span>';
+    tbody += '<span>' + escapeHtml(a.name) + '</span>';
+    tbody += '</td>';
+
+    indices.forEach(function(idx) {
+      var cell = bulkState.extraMap[a.id] && bulkState.extraMap[a.id][idx];
+      var dayVal = cell ? cell.day : '';
+      var timeVal = cell ? cell.time : '';
+      tbody += '<td>';
+      tbody += '<select data-aid="' + a.id + '" data-idx="' + idx + '" data-field="eday" class="extra-day">';
+      tbody += '<option value="">-</option>';
+      for (var d = 1; d <= 30; d++) {
+        tbody += '<option value="' + d + '"' + (dayVal === d ? ' selected' : '') + '>' + d + '</option>';
+      }
+      tbody += '</select>';
+      tbody += '</td>';
+      tbody += '<td>';
+      tbody += '<input type="text" data-aid="' + a.id + '" data-idx="' + idx + '" data-field="etime"' +
+        ' placeholder="HH:MM" value="' + escapeHtml(timeVal) + '">';
+      tbody += '</td>';
+    });
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+
+  table.querySelectorAll('input[data-field="etime"]').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var aid = this.dataset.aid;
+      var idx = Number(this.dataset.idx);
+      if (!bulkState.extraMap[aid]) bulkState.extraMap[aid] = {};
+      if (!bulkState.extraMap[aid][idx]) bulkState.extraMap[aid][idx] = { day: 1, time: '' };
+      bulkState.extraMap[aid][idx].time = this.value;
+    });
+  });
+
+  table.querySelectorAll('select.extra-day').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      var aid = this.dataset.aid;
+      var idx = Number(this.dataset.idx);
+      if (!bulkState.extraMap[aid]) bulkState.extraMap[aid] = {};
+      if (!bulkState.extraMap[aid][idx]) bulkState.extraMap[aid][idx] = { day: 1, time: '' };
+      bulkState.extraMap[aid][idx].day = this.value ? Number(this.value) : null;
+    });
+  });
+}
+
+function saveBulkData() {
+  var updated = [];
+  var changeCount = 0;
+
+  state.alliances.forEach(function(a) {
+    var upgrades = [];
+    var rowMap = bulkState.cellMap[a.id] || {};
+    LEVELS.forEach(function(lv) {
+      var cell = rowMap[lv];
+      if (!cell) return;
+      var timeRaw = (cell.time || '').trim();
+      if (!timeRaw) return;
+      var hm = parseHourMinute(timeRaw);
+      if (!hm) return;
+      var day = cell.day && cell.day >= 1 && cell.day <= 30 ? cell.day : 1;
+      upgrades.push({ level: lv, day: day, hour: hm.hour, minute: hm.minute });
+    });
+    upgrades.sort(function(x, y) {
+      return toMinutes(x.day, x.hour, x.minute) - toMinutes(y.day, y.hour, y.minute);
+    });
+
+    // 额外产出
+    var extraRowMap = bulkState.extraMap[a.id] || {};
+    var extraProductions = [];
+    for (var i = 1; i <= EXTRA_PRODUCTION_COUNT; i++) {
+      var eCell = extraRowMap[i];
+      if (eCell && eCell.day && eCell.time && eCell.time.trim()) {
+        var ehm = parseHourMinute(eCell.time.trim());
+        if (ehm) {
+          extraProductions.push({ index: i, day: eCell.day, hour: ehm.hour, minute: ehm.minute });
+          continue;
+        }
+      }
+      extraProductions.push({ index: i });
+    }
+
+    // 检查是否有变化
+    var oldUpgrades = a.upgrades;
+    var hasChange = false;
+    if (upgrades.length !== oldUpgrades.length) {
+      hasChange = true;
+    } else {
+      for (var j = 0; j < upgrades.length; j++) {
+        if (upgrades[j].level !== oldUpgrades[j].level ||
+            upgrades[j].day !== oldUpgrades[j].day ||
+            upgrades[j].hour !== oldUpgrades[j].hour ||
+            upgrades[j].minute !== oldUpgrades[j].minute) {
+          hasChange = true; break;
+        }
+      }
+    }
+    if (hasChange) changeCount++;
+
+    updated.push({
+      id: a.id, name: a.name, color: a.color,
+      upgrades: upgrades, extraProductions: extraProductions
+    });
+  });
+
+  state.alliances = updated;
+  saveAlliances(state.alliances);
+  closeBulkModal();
+  renderAll();
+  if (changeCount > 0) {
+    toast('已保存 ' + changeCount + ' 个同盟的升级数据', 'success');
+  } else {
+    toast('数据未发生变化', 'info');
+  }
+}
+
+function addAlliance() {
+  var nameInput = document.getElementById('newAllianceName');
+  var colorInput = document.getElementById('newAllianceColor');
+  var name = nameInput.value.trim();
+  if (!name) { toast('请输入同盟名称', 'error'); return; }
+
+  var newId = 'new_' + Date.now();
+  var newAlliance = {
+    id: newId, name: name, color: colorInput.value,
+    upgrades: [],
+    extraProductions: Array.from({ length: EXTRA_PRODUCTION_COUNT }, function(_, i) { return { index: i + 1 }; })
+  };
+  state.alliances.push(newAlliance);
+  bulkState.cellMap[newId] = {};
+  bulkState.extraMap[newId] = {};
+  nameInput.value = '';
+  renderBulkTable();
+  renderExtraTable();
+  toast('已添加同盟 ' + name, 'success');
+}
+
+function resetAll() {
+  if (!confirm('确定恢复默认数据吗？所有自定义修改将被清除。')) return;
+  state.alliances = JSON.parse(JSON.stringify(DEFAULT_ALLIANCES));
+  state.alliances = normalizeAlliances(state.alliances);
+  state.consumes = {};
+  saveAlliances(state.alliances);
+  saveConsumes({});
+  renderAll();
+  closeBulkModal();
+  toast('已恢复默认数据', 'success');
+}
+
+// ==================== 消耗编辑器 ====================
+var consumeState = { allianceId: null, data: null };
+
+function openConsumeModal(allianceId) {
+  var a = state.alliances.find(function(x) { return x.id === allianceId; });
+  if (!a) return;
+  var existing = state.consumes[allianceId] || defaultConsume();
+  consumeState.allianceId = allianceId;
+  consumeState.data = JSON.parse(JSON.stringify(existing));
+
+  document.getElementById('consumeModalTitle').textContent = a.name + ' - 消耗精铁设置';
+  renderConsumeGrid();
+  document.getElementById('consumeModal').classList.add('show');
+}
+
+function closeConsumeModal() {
+  document.getElementById('consumeModal').classList.remove('show');
+  consumeState.allianceId = null;
+  consumeState.data = null;
+}
+
+function renderConsumeGrid() {
+  var grid = document.getElementById('consumeGrid');
+  var html = '';
+  html += '<div class="consume-item">';
+  html += '<label>大营 (每个 ' + BASE_CAMP_COST + ')</label>';
+  html += '<input type="number" id="consumeBaseCamps" min="0" value="' + (consumeState.data.baseCamps || 0) + '">';
+  html += '</div>';
+
+  CITY_LEVELS.forEach(function(lv) {
+    html += '<div class="consume-item">';
+    html += '<label>' + lv + '级城 (每个 ' + CITY_BUILD_COST[lv] + ')</label>';
+    html += '<input type="number" data-level="' + lv + '" class="consume-city-input" min="0" value="' +
+      (consumeState.data.cities[lv] || 0) + '">';
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+
+  document.getElementById('consumeBaseCamps').addEventListener('input', function() {
+    consumeState.data.baseCamps = Math.max(0, parseInt(this.value || '0', 10) || 0);
+    updateConsumeTotal();
+  });
+  grid.querySelectorAll('.consume-city-input').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var lv = Number(this.dataset.level);
+      consumeState.data.cities[lv] = Math.max(0, parseInt(this.value || '0', 10) || 0);
+      updateConsumeTotal();
+    });
+  });
+
+  updateConsumeTotal();
+}
+
+function updateConsumeTotal() {
+  var total = calcConsumeIron(consumeState.data);
+  document.getElementById('consumeTotalVal').textContent = total.toFixed(0);
+}
+
+function saveConsumeData() {
+  var id = consumeState.allianceId;
+  if (!id) return;
+  state.consumes[id] = JSON.parse(JSON.stringify(consumeState.data));
+  saveConsumes(state.consumes);
+  closeConsumeModal();
+  renderAll();
+  toast('已保存消耗设置', 'success');
+}
+
+// ==================== 初始化 ====================
+function init() {
+  populateSelects();
+
+  // 加载数据
+  state.alliances = loadAlliances();
+  state.consumes = loadConsumes();
+  state.realtimeBaseDay = loadBaseDay();
+
+  var saved = loadSavedQuery();
+  state.day = saved.day;
+  state.hour = saved.hour;
+  state.minute = saved.minute;
+
+  // 基准日选择器
+  document.getElementById('baseDaySelect').value = String(state.realtimeBaseDay);
+
+  // 设置输入框初始值
+  syncInputsFromState();
+
+  // 实时模式开关
+  document.getElementById('realtimeSwitch').addEventListener('click', function() {
+    setRealtimeMode(!state.realtimeMode);
+  });
+
+  // 恢复实时按钮
+  document.getElementById('restoreRealtimeBtn').addEventListener('click', function() {
+    setRealtimeMode(true);
+  });
+
+  // 基准日选择
+  document.getElementById('baseDaySelect').addEventListener('change', function() {
+    var n = parseInt(this.value, 10);
+    if (isNaN(n) || n < 1 || n > 30) return;
+    state.realtimeBaseDay = n;
+    saveBaseDay(n);
+    if (state.realtimeMode) {
+      state.day = n;
+      syncInputsFromState();
+      renderAll();
+    }
+    updateLiveTimeDisplay();
+  });
+
+  // 时间选择器
+  document.getElementById('daySelect').addEventListener('change', function() {
+    setRealtimeMode(false);
+    state.day = Number(this.value);
+    renderAll();
+  });
+  document.getElementById('hourInput').addEventListener('input', function() {
+    setRealtimeMode(false);
+    var v = parseInt(this.value || '0', 10);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > 23) v = 23;
+    state.hour = v;
+    renderAll();
+  });
+  document.getElementById('minuteInput').addEventListener('input', function() {
+    setRealtimeMode(false);
+    var v = parseInt(this.value || '0', 10);
+    if (isNaN(v) || v < 0) v = 0;
+    if (v > 59) v = 59;
+    state.minute = v;
+    renderAll();
+  });
+
+  // 快捷按钮
+  document.querySelectorAll('.quick-btns .btn-quick').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var d = Number(this.dataset.day);
+      var h = Number(this.dataset.hour);
+      var m = Number(this.dataset.minute);
+      setRealtimeMode(false);
+      state.day = d;
+      state.hour = h;
+      state.minute = m;
+      syncInputsFromState();
+      renderAll();
+      document.querySelectorAll('.btn-quick').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  // 批量编辑
+  document.getElementById('bulkEditBtn').addEventListener('click', openBulkModal);
+  document.getElementById('bulkCloseBtn').addEventListener('click', closeBulkModal);
+  document.getElementById('bulkCancelBtn').addEventListener('click', closeBulkModal);
+  document.getElementById('bulkSaveBtn').addEventListener('click', saveBulkData);
+  document.getElementById('bulkResetBtn').addEventListener('click', function() {
+    if (!confirm('确定恢复默认数据吗？所有自定义修改将被清除。')) return;
+    state.alliances = JSON.parse(JSON.stringify(DEFAULT_ALLIANCES));
+    state.alliances = normalizeAlliances(state.alliances);
+    state.consumes = {};
+    saveAlliances(state.alliances);
+    saveConsumes(state.consumes);
+    closeBulkModal();
+    renderAll();
+    toast('已恢复默认数据', 'success');
+  });
+  document.getElementById('addAllianceBtn').addEventListener('click', addAlliance);
+
+  document.querySelectorAll('.bulk-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      switchBulkTab(this.dataset.tab);
+    });
+  });
+
+  // 消耗编辑
+  document.getElementById('consumeCloseBtn').addEventListener('click', closeConsumeModal);
+  document.getElementById('consumeCancelBtn').addEventListener('click', closeConsumeModal);
+  document.getElementById('consumeSaveBtn').addEventListener('click', saveConsumeData);
+
+  // 恢复默认（主页面按钮）
+  document.getElementById('resetBtn').addEventListener('click', function() {
+    if (!confirm('确定恢复默认数据吗？所有自定义修改将被清除。')) return;
+    state.alliances = JSON.parse(JSON.stringify(DEFAULT_ALLIANCES));
+    state.alliances = normalizeAlliances(state.alliances);
+    state.consumes = {};
+    saveAlliances(state.alliances);
+    saveConsumes(state.consumes);
+    renderAll();
+    toast('已恢复默认数据', 'success');
+  });
+
+  // 对比基准选择
+  document.getElementById('compareBaseSelect').addEventListener('change', function() {
+    state.compareBaseId = this.value;
+    try { localStorage.setItem(STORAGE_KEYS.compareBase, this.value); } catch(e) {}
+    renderCompare();
+  });
+
+  // 读取对比基准
+  try {
+    var cb = localStorage.getItem(STORAGE_KEYS.compareBase);
+    if (cb) state.compareBaseId = cb;
+  } catch(e) {}
+
+  // 点击遮罩关闭
+  document.getElementById('bulkModal').addEventListener('click', function(e) {
+    if (e.target === this) closeBulkModal();
+  });
+  document.getElementById('consumeModal').addEventListener('click', function(e) {
+    if (e.target === this) closeConsumeModal();
+  });
+
+  // 启动实时模式
+  setRealtimeMode(true);
+  renderAll();
+}
+
+// 启动
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
